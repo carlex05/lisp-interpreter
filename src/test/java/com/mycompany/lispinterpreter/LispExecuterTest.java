@@ -3,6 +3,8 @@ package com.mycompany.lispinterpreter;
 import com.mycompany.lispinterpreter.sexpressions.Atom;
 import com.mycompany.lispinterpreter.sexpressions.AtomType;
 import com.mycompany.lispinterpreter.sexpressions.SExpression;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import org.junit.jupiter.api.Test;
@@ -301,6 +303,14 @@ public class LispExecuterTest {
         Object actual = executer.execute(expression);
         assertTrue((Boolean) actual);
     }
+    
+    @Test
+    public void testExecute_andFalse2() {
+        SExpression expression = LispInterpreter.tokenize("(and true true false)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean) actual);
+    }
 
     @Test
     public void testExecute_ifFalse() {
@@ -477,5 +487,332 @@ public class LispExecuterTest {
         Object actual = executer.execute(expression);
         assertFalse((Boolean)actual);
     }
+    
+    @Test
+    public void testExecute_equalsToEmpty() {
+        SExpression expression = LispInterpreter.tokenize("(=)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToOneParameter() {
+        SExpression expression = LispInterpreter.tokenize("(= \"This\")");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToTwoNoEqualParameters() {
+        SExpression expression = LispInterpreter.tokenize("(= \"This\" \"this\")");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToTwoEqualParameters() {
+        SExpression expression = LispInterpreter.tokenize("(= \"this\" \"this\")");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToTwoEqualVector() {
+        SExpression expression = LispInterpreter.tokenize("(= [2 3] [2 3])");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToTwoNoEqualVector() {
+        SExpression expression = LispInterpreter.tokenize("(= [3 2] [2 3])");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToTwoEqualSet() {
+        SExpression expression = LispInterpreter.tokenize("(= #{2 3} #{3 2})");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToTwoNoEqualSet() {
+        SExpression expression = LispInterpreter.tokenize("(= #{3 2} #{1 2 3})");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToTwoEqualMap() {
+        SExpression expression = LispInterpreter.tokenize("(= {:a 1 :b 2} {:a 1 :b 2})");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToTwoNoEqualMap() {
+        SExpression expression = LispInterpreter.tokenize("(= {:a 1 :b 2} {:a 1 :c 2})");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToTwoDifferentTypeOfParameters() {
+        SExpression expression = LispInterpreter.tokenize("(= \"0\" 0)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToThreeNoEqualParameters() {
+        SExpression expression = LispInterpreter.tokenize("(= 1 0 1)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToThreeNoEqualParameters2() {
+        SExpression expression = LispInterpreter.tokenize("(= 1 1 0)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToThreeEqualParameters() {
+        SExpression expression = LispInterpreter.tokenize("(= 1 1 1)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToThreeEqualParameters2() {
+        SExpression expression = LispInterpreter.tokenize("(= 1 1.0 1)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_equalsToThreeEqualParameters3() {
+        SExpression expression = LispInterpreter.tokenize("(= 1 (+ 0 1.0) (/ 2 2))");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_def() {
+        SExpression expression = LispInterpreter.tokenize("(def n 5)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertEquals("N", actual);
+        Object nResponse = executer.execute(LispInterpreter.tokenize("(format \"%d\" n)"));
+        assertEquals("5", nResponse);
+    }
+    
+    @Test
+    public void testExecute_defWithExpression() {
+        SExpression expression = LispInterpreter.tokenize("(def n (+ 1 3 1))");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertEquals("N", actual);
+        Object nResponse = executer.execute(LispInterpreter.tokenize("(format \"%d\" n)"));
+        assertEquals("5", nResponse);
+    }
+    
+    @Test
+    public void testExecute_greaterThanEmpty() {
+        SExpression expression = LispInterpreter.tokenize("(>)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_greaterThanWithOneParam() {
+        SExpression expression = LispInterpreter.tokenize("(> -9223372036854775809)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_greaterThanWithTwoNoIncrementalParams() {
+        SExpression expression = LispInterpreter.tokenize("(> 9223372036854775807 -9223372036854775809)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_greaterThanWithTwoIncrementalParams() {
+        SExpression expression = LispInterpreter.tokenize("(> -1 0.5)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_greaterThanWithThreeNoIncrementalParams() {
+        SExpression expression = LispInterpreter.tokenize("(> 0.5 -1 0)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_greaterThanWithThreeIncrementalParams() {
+        SExpression expression = LispInterpreter.tokenize("(> 6 1 0.5)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_greaterThanWithManyIncrementalParams() {
+        SExpression expression = LispInterpreter.tokenize("(> 6 5 4 3 2)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_greaterThanWithThreeNoIncrementalParams2() {
+        SExpression expression = LispInterpreter.tokenize("(> 0.5 1 0)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean)actual);
+    }
+    
+    @Test
+    public void testExecute_greaterThanWithThreeNoIncrementalParams3() {
+        SExpression expression = LispInterpreter.tokenize("(> 0 6 5)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean) actual);
+    }
 
+    @Test
+    public void testExecute_greaterThanOrEqualToEmpty() {
+        SExpression expression = LispInterpreter.tokenize("(>=)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean) actual);
+    }
+
+    @Test
+    public void testExecute_greaterThanOrEqualToOneParam() {
+        SExpression expression = LispInterpreter.tokenize("(>= -92654)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean) actual);
+    }
+
+    @Test
+    public void testExecute_greaterThanOrEqualToTwoIncrementalParams() {
+        SExpression expression = LispInterpreter.tokenize("(>= 0.2 -92654)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean) actual);
+    }
+
+    @Test
+    public void testExecute_greaterThanOrEqualToTwoNoIncrementalParams() {
+        SExpression expression = LispInterpreter.tokenize("(>= 0.2 92654)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean) actual);
+    }
+
+    @Test
+    public void testExecute_greaterThanOrEqualToThreeIncrementalParams() {
+        SExpression expression = LispInterpreter.tokenize("(>= 1 1 0.5)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean) actual);
+    }
+
+    @Test
+    public void testExecute_greaterThanOrEqualToThreeNoIncrementalParams() {
+        SExpression expression = LispInterpreter.tokenize("(>= -1.2 1 1)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean) actual);
+    }
+    
+    @Test
+    public void testExecute_orFalse() {
+        SExpression expression = LispInterpreter.tokenize("(or false false)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertFalse((Boolean) actual);
+    }
+    
+    @Test
+    public void testExecute_orTrue1() {
+        SExpression expression = LispInterpreter.tokenize("(or true false)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean) actual);
+    }
+    
+    @Test
+    public void testExecute_orTrue2() {
+        SExpression expression = LispInterpreter.tokenize("(or true true)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean) actual);
+    }
+    
+    @Test
+    public void testExecute_orTrue3() {
+        SExpression expression = LispInterpreter.tokenize("(or false true)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean) actual);
+    }
+    
+    @Test
+    public void testExecute_orTrue4() {
+        SExpression expression = LispInterpreter.tokenize("(or (< 2 6.0) false)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean) actual);
+    }
+    
+    @Test
+    public void testExecute_orTrue5() {
+        SExpression expression = LispInterpreter.tokenize("(or false false (< 2 6.0) false)");
+        LispExecuter executer = new LispExecuter();
+        Object actual = executer.execute(expression);
+        assertTrue((Boolean) actual);
+    }
+    
+    @Test
+    public void testExecute_println() {
+        SExpression expression = LispInterpreter.tokenize("(println \"Hello world\")");
+        LispExecuter executer = new LispExecuter();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream out = new PrintStream(baos);
+        System.setOut(out);
+        Object actual = executer.execute(expression);
+        assertEquals("NIL", actual);
+        assertEquals("Hello world"+System.lineSeparator(), baos.toString());
+    }
 }

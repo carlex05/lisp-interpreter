@@ -24,16 +24,22 @@ public class LispExecuter {
         context.put(new Atom("+", AtomType.SYMBOL), createAdditionFunction());
         context.put(new Atom("*", AtomType.SYMBOL), createMultiplicationFunction());
         context.put(new Atom("DEFN", AtomType.SYMBOL), createDefnFunction());
+        context.put(new Atom("DEF", AtomType.SYMBOL), createDefFunction());
         context.put(new Atom("NOT", AtomType.SYMBOL), createNotFunction());
         context.put(new Atom("AND", AtomType.SYMBOL), createAndFunction());
+        context.put(new Atom("OR", AtomType.SYMBOL), createOrFunction());
         context.put(new Atom("TRUE", AtomType.SYMBOL), (contextBoolean, params) -> true);
         context.put(new Atom("FALSE", AtomType.SYMBOL), (contextBoolean, params) -> false);
         context.put(new Atom("-", AtomType.SYMBOL), createSubstractionFunction());
         context.put(new Atom("/", AtomType.SYMBOL), createDivisionFunction());
         context.put(new Atom("IF", AtomType.SYMBOL), createIfFunction());
         context.put(new Atom("FORMAT", AtomType.SYMBOL), createFormatFunction());
+        context.put(new Atom("PRINTLN", AtomType.SYMBOL), createPrintlnFunction());
         context.put(new Atom("<", AtomType.SYMBOL), createLessThanFunction());
         context.put(new Atom("<=", AtomType.SYMBOL), createLessThanOrEqualToFunction());
+        context.put(new Atom(">=", AtomType.SYMBOL), createGreaterThanOrEqualToFunction());
+        context.put(new Atom(">", AtomType.SYMBOL), createGreaterThanFunction());
+        context.put(new Atom("=", AtomType.SYMBOL), createEqualsToFunction());
         return expression.evaluate(context);
     }
 
@@ -109,6 +115,24 @@ public class LispExecuter {
         }
         return BigDecimal.valueOf(number.longValue());
     }
+    
+    BiFunction<Map, List<SExpression>, Object> createDefFunction() {
+        return (Map context, List<SExpression> params) -> {
+            Atom symbolToCreate = (Atom) params.get(0);
+            SExpression value = params.get(1);
+            BiFunction<Map, List<SExpression>, Object> functionToCreate = (contextOfFunctionToCreate, paramsPassed) -> value.evaluate(contextOfFunctionToCreate);
+            context.put(symbolToCreate, functionToCreate);
+            return symbolToCreate.value();
+        };
+    }
+    
+    BiFunction<Map, List<SExpression>, Object> createPrintlnFunction() {
+        return (Map context, List<SExpression> params) -> {
+            SExpression value = params.get(0);
+            System.out.println(value.evaluate(context));
+            return "NIL";
+        };
+    }
 
     BiFunction<Map, List<SExpression>, Object> createDefnFunction() {
         return (Map context, List<SExpression> params) -> {
@@ -130,6 +154,31 @@ public class LispExecuter {
         };
     }
     
+    BiFunction<Map, List<SExpression>, Object> createGreaterThanOrEqualToFunction() {
+        return (Map context, List<SExpression> params) -> {
+            if(params.size() >= 2){
+                List<Number> numberParams = params.stream().map(param -> (Number) param.evaluate(context)).toList();
+                boolean isDecimalOperation = numberParams.stream().anyMatch(param -> param instanceof BigDecimal);
+                if(isDecimalOperation){
+                    for(int i = 0; i<numberParams.size()-1; i++){
+                        BigDecimal left = toBigDecimal(numberParams.get(i));
+                        BigDecimal right = toBigDecimal(numberParams.get(i+1));
+                        if(left.compareTo(right) < 0) return false;
+                    }
+                    return true;
+                }else{
+                    for(int i = 0; i<numberParams.size()-1; i++){
+                        BigInteger left = (BigInteger)numberParams.get(i);
+                        BigInteger right = (BigInteger)numberParams.get(i+1);
+                        if(left.compareTo(right) < 0) return false;
+                    }
+                    return true;
+                }
+            }
+            return !params.isEmpty();
+        };
+    }
+    
     BiFunction<Map, List<SExpression>, Object> createLessThanOrEqualToFunction() {
         return (Map context, List<SExpression> params) -> {
             if(params.size() >= 2){
@@ -147,6 +196,31 @@ public class LispExecuter {
                         BigInteger left = (BigInteger)numberParams.get(i);
                         BigInteger right = (BigInteger)numberParams.get(i+1);
                         if(left.compareTo(right) > 0) return false;
+                    }
+                    return true;
+                }
+            }
+            return !params.isEmpty();
+        };
+    }
+    
+    BiFunction<Map, List<SExpression>, Object> createGreaterThanFunction() {
+        return (Map context, List<SExpression> params) -> {
+            if(params.size() >= 2){
+                List<Number> numberParams = params.stream().map(param -> (Number) param.evaluate(context)).toList();
+                boolean isDecimalOperation = numberParams.stream().anyMatch(param -> param instanceof BigDecimal);
+                if(isDecimalOperation){
+                    for(int i = 0; i<numberParams.size()-1; i++){
+                        BigDecimal left = toBigDecimal(numberParams.get(i));
+                        BigDecimal right = toBigDecimal(numberParams.get(i+1));
+                        if(left.compareTo(right) <= 0) return false;
+                    }
+                    return true;
+                }else{
+                    for(int i = 0; i<numberParams.size()-1; i++){
+                        BigInteger left = (BigInteger)numberParams.get(i);
+                        BigInteger right = (BigInteger)numberParams.get(i+1);
+                        if(left.compareTo(right) <= 0) return false;
                     }
                     return true;
                 }
@@ -189,9 +263,13 @@ public class LispExecuter {
 
     BiFunction<Map, List<SExpression>, Object> createAndFunction() {
         return (Map context, List<SExpression> params) -> {
-            Boolean booleanParam = (Boolean) params.get(0).evaluate(context);
-            Boolean booleanParam2 = (Boolean) params.get(1).evaluate(context);
-            return booleanParam && booleanParam2;
+            return !params.stream().map(param -> (Boolean)param.evaluate(context)).anyMatch(param -> !param);
+        };
+    }
+    
+    BiFunction<Map, List<SExpression>, Object> createOrFunction() {
+        return (Map context, List<SExpression> params) -> {
+            return params.stream().map(param -> (Boolean)param.evaluate(context)).anyMatch(param -> param);
         };
     }
 
@@ -216,6 +294,21 @@ public class LispExecuter {
                 return result;
             }).toList().subList(1, params.size());
             return String.format(format, values.toArray());
+        };
+    }
+    
+    BiFunction<Map, List<SExpression>, Object> createEqualsToFunction() {
+        return (Map context, List<SExpression> params) -> {
+            if(params.size() < 2)
+                return true;
+            List<Object> evaluatedParams = params.stream().map(param -> param.evaluate(context)).toList();
+            if(evaluatedParams.stream().allMatch(param -> param instanceof Number))
+                if(evaluatedParams.stream().anyMatch(param -> param instanceof BigDecimal)){
+                    BigDecimal firstParam = toBigDecimal((Number)evaluatedParams.get(0));
+                    return !evaluatedParams.stream().map(param -> toBigDecimal((Number)param)).anyMatch(param -> param.compareTo(firstParam) != 0);
+                }
+                    
+            return !evaluatedParams.stream().anyMatch(param -> !param.equals(evaluatedParams.get(0)));
         };
     }
 

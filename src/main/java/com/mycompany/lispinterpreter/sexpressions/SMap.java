@@ -17,7 +17,7 @@ public class SMap extends HashMap<SExpression, SExpression> implements SExpressi
 
     @Override
     public Object evaluate(Map<Atom, BiFunction<Map, List<SExpression>, Object>> context) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return this;
     }
     
 }
